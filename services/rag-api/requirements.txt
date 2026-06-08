@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+httpx
+psycopg[binary]
+python-multipart
+pymupdf4llm
+PyMuPDF

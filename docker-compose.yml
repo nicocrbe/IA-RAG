@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: rag-postgres
+    environment:
+      POSTGRES_DB: rag
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ingest-api:
+    build: ./services/rag-api
+    container_name: rag-ingest-api
+    command: uvicorn ingest_api:app --host 0.0.0.0 --port 8001
+    environment:
+      DB_DSN: postgresql://rag:rag@postgres:5432/rag
+      OLLAMA_URL: http://host.docker.internal:11434/api
+      EMBED_MODEL: embeddinggemma
+      CHUNK_SIZE: 800
+      CHUNK_OVERLAP: 120
+      DEBUG_CHUNKS_FILE: /tmp/debug_chunks.txt
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8001:8001"
+
+  query-api:
+    build: ./services/rag-api
+    container_name: rag-query-api
+    command: uvicorn query_api:app --host 0.0.0.0 --port 8002
+    environment:
+      DB_DSN: postgresql://rag:rag@postgres:5432/rag
+      OLLAMA_URL: http://host.docker.internal:11434/api
+      EMBED_MODEL: embeddinggemma
+      CHAT_MODEL: gemma3:4b
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8002:8002"
+
+  frontend:
+    build: ./frontend
+    container_name: rag-frontend
+    depends_on:
+      ingest-api:
+        condition: service_started
+      query-api:
+        condition: service_started
+    ports:
+      - "127.0.0.1:3000:80"
+
+volumes:
+  pgdata:
