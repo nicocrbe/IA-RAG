@@ -26,20 +26,71 @@ Aplicacion local de RAG para cargar documentos PDF, indexarlos con embeddings y 
 
 ## Requisitos
 
-- Windows con Docker Desktop corriendo.
-- Ollama instalado y disponible en PATH.
-- Conexion a internet la primera vez para descargar imagenes Docker y modelos.
+- Windows 10/11.
+- Docker Desktop instalado manualmente y corriendo.
+- Conexion a internet la primera vez para descargar imagenes Docker y modelos de Ollama.
 
-El script de inicio verifica y descarga los modelos necesarios:
+Docker Desktop debe instalarse manualmente porque requiere instalador propio, permisos del sistema, WSL2/virtualizacion y aceptar terminos de Docker Desktop.
 
-```powershell
-ollama pull embeddinggemma
-ollama pull gemma3:4b
+Descarga Docker Desktop desde:
+
+```text
+https://www.docker.com/products/docker-desktop/
 ```
+
+Luego abrilo y espera a que diga que Docker esta corriendo.
+
+## Setup rapido en Windows
+
+### 1. Clonar el repositorio
+
+```cmd
+git clone https://github.com/nicocrbe/IA-RAG.git
+cd IA-RAG
+```
+
+### 2. Instalar y abrir Docker Desktop
+
+Instala Docker Desktop manualmente desde:
+
+```text
+https://www.docker.com/products/docker-desktop/
+```
+
+Despues de instalarlo:
+
+- Abrir Docker Desktop.
+- Esperar a que el motor quede corriendo.
+- Si Docker pide habilitar WSL2 o virtualizacion, aceptar y reiniciar si hace falta.
+
+### 3. Ejecutar el setup/start
+
+```cmd
+start-local.cmd
+```
+
+Ese unico comando hace el setup operativo del proyecto:
+
+- Detectar Ollama.
+- Si no esta instalado, intentar instalarlo con `winget install --id Ollama.Ollama`.
+- Iniciar Ollama local si no esta respondiendo.
+- Descargar/verificar los modelos `embeddinggemma` y `gemma3:4b`.
+- Construir y levantar los contenedores Docker.
+- Publicar la app en `http://127.0.0.1:3000`.
+
+La primera ejecucion puede tardar porque descarga imagenes Docker y modelos de IA.
+
+Si la instalacion automatica falla, instala Ollama manualmente desde:
+
+```text
+https://ollama.com/download/windows
+```
+
+Luego cerra y abri la terminal para refrescar el PATH.
 
 ## Como levantar el proyecto
 
-Desde la carpeta del proyecto:
+Despues del setup inicial, se usa el mismo comando para levantar todo:
 
 ```cmd
 start-local.cmd
@@ -48,7 +99,9 @@ start-local.cmd
 Esto:
 
 - Verifica Docker.
+- Verifica Docker Compose.
 - Verifica Ollama local.
+- Instala Ollama con `winget` si no lo encuentra y `winget` esta disponible.
 - Inicia Ollama local si no esta respondiendo.
 - Descarga/verifica los modelos.
 - Levanta PostgreSQL, APIs y frontend con Docker Compose.
@@ -66,6 +119,47 @@ stop-local.cmd
 ```
 
 Esto baja Docker Compose y cierra procesos locales de Ollama.
+
+## Instalacion automatica: que se puede y que no
+
+El proyecto automatiza desde `start-local.cmd`:
+
+- Instalacion de Ollama con `winget`, cuando `winget` esta disponible.
+- Descarga de modelos `embeddinggemma` y `gemma3:4b`.
+- Inicio de Ollama local.
+- Build y arranque de contenedores Docker.
+
+El proyecto no instala Docker Desktop automaticamente. Docker Desktop se debe instalar manualmente por el usuario por requerimientos de permisos, WSL2/virtualizacion y configuracion del sistema operativo.
+
+## Troubleshooting
+
+### Docker no esta corriendo
+
+Abrir Docker Desktop y esperar a que termine de iniciar. Luego volver a correr:
+
+```cmd
+start-local.cmd
+```
+
+### Ollama no queda disponible despues de instalar
+
+Cerrar y abrir la terminal para refrescar el PATH. Tambien se puede probar:
+
+```cmd
+ollama --version
+```
+
+### Puerto ocupado
+
+Los servicios usan estos puertos locales:
+
+- `3000`: frontend
+- `8001`: ingest API
+- `8002`: query API
+- `5432`: PostgreSQL
+- `11434`: Ollama local
+
+Si alguno esta ocupado, hay que cerrar el proceso que lo usa o cambiar el puerto en `docker-compose.yml`.
 
 ## Servicios
 
